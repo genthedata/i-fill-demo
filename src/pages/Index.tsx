@@ -266,12 +266,14 @@ const Index = () => {
         body: JSON.stringify({
           schema_id: selectedSchemaId,
           name: patientName,
-          patient_name: patientName,
-          doctor_name: doctorName,
         }),
       });
       if (!res.ok) throw new Error(`Create session failed (${res.status})`);
       const created = await res.json();
+      if (created?.id) {
+        localStorage.setItem('SESSION_ID', created.id);
+        (window as any).session_id = created.id;
+      }
       toast.success(`Session created${created?.id ? `: ${created.id}` : ''}`);
       localStorage.setItem('SCHEMA_ID', selectedSchemaId);
       (window as any).schema_id = selectedSchemaId;
