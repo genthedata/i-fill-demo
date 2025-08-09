@@ -406,10 +406,9 @@ const Index = () => {
   };
 
   const exportCsvUrl = useMemo(() => {
-    return selectedSessionId
-      ? `${getHttpBase()}/api/export/${encodeURIComponent(selectedSessionId)}/csv`
-      : null;
-  }, [selectedSessionId, apiBase]);
+    const sid = selectedSessionId || sessionId || (typeof window !== 'undefined' ? localStorage.getItem('SESSION_ID') : null);
+    return sid ? `${getHttpBase()}/api/export/${encodeURIComponent(sid)}/csv` : null;
+  }, [selectedSessionId, sessionId, apiBase]);
 
   const displayFields = useMemo(() => {
     const f = (sessionDetails?.fields || {}) as any;
@@ -600,7 +599,7 @@ const Index = () => {
               <Square /> Stop Recording
             </Button>
           )}
-          {selectedSessionId && exportCsvUrl && (
+          {exportCsvUrl && (
             <Button id="downloadBtn" variant="outline" asChild aria-label="Download CSV">
               <a href={exportCsvUrl} target="_blank" rel="noopener noreferrer">
                 <Download className="mr-2" /> Download CSV
