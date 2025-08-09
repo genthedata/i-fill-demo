@@ -36,7 +36,12 @@ export function useMedicalSession() {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "1",
         },
-        body: JSON.stringify({ patient_name: patientName, doctor_name: doctorName }),
+        body: JSON.stringify({
+          schema_id: (() => { try { return localStorage.getItem('SCHEMA_ID') || 'default'; } catch { return 'default'; } })(),
+          name: patientName || `Session-${new Date().toISOString()}`,
+          patient_name: patientName,
+          doctor_name: doctorName,
+        }),
       });
       if (!res.ok) throw new Error(`Create session failed (${res.status})`);
       const data = await res.json().catch(() => ({}));
