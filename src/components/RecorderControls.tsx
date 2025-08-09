@@ -7,9 +7,10 @@ import WebSocketRecorder from "@/lib/WebSocketRecorder";
 interface Props {
   sessionId: string | null;
   onFieldUpdate: (field: string, value: string) => void;
+  onTranscription?: (text: string) => void;
 }
 
-export default function RecorderControls({ sessionId, onFieldUpdate }: Props) {
+export default function RecorderControls({ sessionId, onFieldUpdate, onTranscription }: Props) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -21,7 +22,7 @@ export default function RecorderControls({ sessionId, onFieldUpdate }: Props) {
     if (!sessionId) return;
 
     // Setup WS
-    wsRecRef.current = WebSocketRecorder({ sessionId, onFieldUpdate });
+    wsRecRef.current = WebSocketRecorder({ sessionId, onFieldUpdate, onTranscription });
     wsRecRef.current.connectWS();
 
     // Request mic access and start MediaRecorder
@@ -65,7 +66,7 @@ export default function RecorderControls({ sessionId, onFieldUpdate }: Props) {
 
     recorder.start();
     setRecording(true);
-  }, [sessionId, onFieldUpdate]);
+  }, [sessionId, onFieldUpdate, onTranscription]);
 
   const stopRecording = useCallback(() => {
     try { mediaRecorderRef.current?.stop(); } catch {}

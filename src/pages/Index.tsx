@@ -62,6 +62,7 @@ const Index = () => {
 
   const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
   const passiveWsRef = useRef<WebSocket | null>(null);
+  const [transcriptionText, setTranscriptionText] = useState("");
 
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -608,12 +609,20 @@ const Index = () => {
           )}
         </section>
 
-        <section className="mb-8 grid gap-2">
+        <section className="mb-8 grid gap-3">
           <Label>Custom Recorder (send on stop)</Label>
-          <RecorderControls sessionId={effectiveSessionId} onFieldUpdate={handleFieldUpdate} />
+          <RecorderControls
+            sessionId={effectiveSessionId}
+            onFieldUpdate={handleFieldUpdate}
+            onTranscription={(txt) => setTranscriptionText(txt)}
+          />
           {!effectiveSessionId && (
             <p className="text-xs text-muted-foreground">Create or select a session to enable recording.</p>
           )}
+          <div className="grid gap-2">
+            <Label htmlFor="customTranscription">Transcription (live)</Label>
+            <Textarea id="customTranscription" value={transcriptionText} readOnly className="min-h-24" placeholder="Live transcription will appear here..." />
+          </div>
         </section>
 
         <div className="grid gap-8 md:grid-cols-2">
