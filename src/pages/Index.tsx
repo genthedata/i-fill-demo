@@ -28,6 +28,14 @@ type SessionInfo = {
   created_at?: string;
 };
 
+type SessionDetails = {
+  id: string;
+  name?: string;
+  created_at?: string;
+  data?: any;
+  fields?: any;
+};
+
 const Index = () => {
   const [patientName, setPatientName] = useState("");
   const [token] = useState<string | undefined>(undefined);
@@ -47,6 +55,9 @@ const Index = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
+  const [loadingSession, setLoadingSession] = useState(false);
 
   const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
 
@@ -68,6 +79,8 @@ const Index = () => {
       setSchemaId(id);
       setSelectedSchemaId(id);
     }
+    const sid = localStorage.getItem('SESSION_ID');
+    if (sid) setSelectedSessionId(sid);
   }, []);
 
   const canStart = useMemo(() => !!patientName && !isRecording, [patientName, isRecording]);
@@ -194,6 +207,28 @@ const Index = () => {
   useEffect(() => {
     fetchSessions().catch(() => {});
   }, []);
+
+  const fetchSessionDetails = async (id: string) => {
+    setLoadingSession(true);
+    try {
+      const base = getHttpBase();
+      const res = await fetch(`${base}/api/sessions/${encodeURIComponent(id)}`, {
+        headers: { "ngrok-skip-browser-warning": "1" },
+      });
+      if (!res.ok) throw new Error(`Get session failed (${res.status})`);
+      const data: SessionDetails = await res.json();
+      setSessionDetails(data);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to load session');
+      setSessionDetails(null);
+    } finally {
+      setLoadingSession(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedSessionId) fetchSessionDetails(selectedSessionId);
+  }, [selectedSessionId, apiBase]);
   
   const uploadSchema = async () => {
     if (!schemaFile) {
@@ -303,6 +338,7 @@ const Index = () => {
       if (created?.id) {
         localStorage.setItem('SESSION_ID', created.id);
         (window as any).session_id = created.id;
+        setSelectedSessionId(created.id);
       }
       toast.success(`Session created${created?.id ? `: ${created.id}` : ''}`);
       localStorage.setItem('SCHEMA_ID', selectedSchemaId);
@@ -436,13 +472,38 @@ const Index = () => {
                 </TableHeader>
                 <TableBody>
                   {sessions.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow key={s.id} onClick={() => setSelectedSessionId(s.id)} className="cursor-pointer">
                       <TableCell>{s.name}</TableCell>
                       <TableCell>{s.created_at ? new Date(s.created_at).toLocaleString() : '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </div>
+        </section>
+
+        <section className="mb-6 grid gap-2">
+          <Label>Session details preview</Label>
+          <div className="rounded-md border bg-muted/20 p-3">
+            {!selectedSessionId ? (
+              <p className="text-sm text-muted-foreground">Select a session to view details.</p>
+            ) : loadingSession ? (
+              <p className="text-sm text-muted-foreground">Loading session…</p>
+            ) : sessionDetails ? (
+              sessionDetails.data && Array.isArray(sessionDetails.data) ? (
+                <ul className="list-disc pl-5 text-sm">
+                  {sessionDetails.data.map((d: any, idx: number) => (
+                    <li key={idx}>{typeof d === 'string' ? d : JSON.stringify(d)}</li>
+                  ))}
+                </ul>
+              ) : sessionDetails.fields ? (
+                <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(sessionDetails.fields, null, 2)}</pre>
+              ) : (
+                <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(sessionDetails, null, 2)}</pre>
+              )
+            ) : (
+              <p className="text-sm text-muted-foreground">No details available.</p>
             )}
           </div>
         </section>
