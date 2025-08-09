@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Mic, Square, Download } from "lucide-react";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
@@ -18,6 +19,12 @@ type SchemaInfo = {
   id: string;
   name: string;
   fields?: string[];
+  created_at?: string;
+};
+
+type SessionInfo = {
+  id: string;
+  name: string;
   created_at?: string;
 };
 
@@ -38,6 +45,8 @@ const Index = () => {
   const [creating, setCreating] = useState(false);
   const [schemaDetails, setSchemaDetails] = useState<SchemaInfo | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
   const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
 
@@ -164,6 +173,27 @@ const Index = () => {
       .catch((e: any) => toast.error(e?.message || 'Failed to load schema details'))
       .finally(() => setLoadingDetails(false));
   }, [selectedSchemaId, apiBase]);
+  
+  const fetchSessions = async () => {
+    setLoadingSessions(true);
+    try {
+      const base = getHttpBase();
+      const res = await fetch(`${base}/api/sessions/list`, {
+        headers: { "ngrok-skip-browser-warning": "1" },
+      });
+      if (!res.ok) throw new Error(`List sessions failed (${res.status})`);
+      const data: SessionInfo[] = await res.json();
+      setSessions(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to load sessions');
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSessions().catch(() => {});
+  }, []);
   
   const uploadSchema = async () => {
     if (!schemaFile) {
@@ -383,6 +413,36 @@ const Index = () => {
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">No fields found for this schema.</p>
+            )}
+          </div>
+        </section>
+
+        <section className="mb-6 grid gap-2">
+          <Label>Past Sessions</Label>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Recent sessions</p>
+            <Button size="sm" variant="outline" onClick={fetchSessions} disabled={loadingSessions}>{loadingSessions ? 'Refreshing…' : 'Refresh'}</Button>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-3 overflow-x-auto">
+            {sessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No sessions found.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell>{s.name}</TableCell>
+                      <TableCell>{s.created_at ? new Date(s.created_at).toLocaleString() : '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </div>
         </section>
