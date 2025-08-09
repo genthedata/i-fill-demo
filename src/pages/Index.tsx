@@ -23,6 +23,7 @@ const Index = () => {
   const [schemaFile, setSchemaFile] = useState<File | null>(null);
   const [schemaId, setSchemaId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [apiBase, setApiBase] = useState(getHttpBase());
 
   const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
 
@@ -86,6 +87,20 @@ const Index = () => {
       toast.error('API unreachable');
     } finally {
       setPinging(false);
+    }
+  };
+
+  const saveApiBase = async () => {
+    const val = apiBase.trim();
+    if (!val) { toast.error('Enter a valid API base URL'); return; }
+    try {
+      localStorage.setItem('API_BASE_URL', val);
+      (window as any).BASE_URL = val;
+      setHttpStatus('idle');
+      toast.success('API base saved');
+      await pingApi();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to save API base');
     }
   };
   
@@ -210,6 +225,16 @@ const Index = () => {
             Ping API
           </Button>
         </div>
+
+        <section className="mb-4 grid gap-2">
+          <Label htmlFor="apiBaseInput">API Base URL</Label>
+          <div className="flex items-center gap-3">
+            <Input id="apiBaseInput" placeholder="https://your-api.example.com" value={apiBase} onChange={(e) => setApiBase(e.target.value)} />
+            <Button size="sm" variant="secondary" onClick={saveApiBase} aria-label="Save API base" disabled={pinging}>Save & Test</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Current: {getHttpBase()}</p>
+        </section>
+
         <section className="mb-6 grid gap-2">
           <Label htmlFor="schemaFile">Upload CSV template</Label>
           <div className="flex items-center gap-3">
