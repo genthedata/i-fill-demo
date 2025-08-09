@@ -8,10 +8,18 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Mic, Square, Download } from "lucide-react";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
 import { getHttpBase } from "@/config/api";
+
+type SchemaInfo = {
+  id: string;
+  name: string;
+  fields?: string[];
+  created_at?: string;
+};
 
 const Index = () => {
   const [patientName, setPatientName] = useState("");
@@ -24,6 +32,10 @@ const Index = () => {
   const [schemaId, setSchemaId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [apiBase, setApiBase] = useState(getHttpBase());
+  const [schemas, setSchemas] = useState<SchemaInfo[]>([]);
+  const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
+  const [loadingSchemas, setLoadingSchemas] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
 
@@ -41,7 +53,10 @@ const Index = () => {
 
   useEffect(() => {
     const id = localStorage.getItem('SCHEMA_ID');
-    if (id) setSchemaId(id);
+    if (id) {
+      setSchemaId(id);
+      setSelectedSchemaId(id);
+    }
   }, []);
 
   const canStart = useMemo(() => !!patientName && !isRecording, [patientName, isRecording]);
@@ -103,6 +118,31 @@ const Index = () => {
       toast.error(e?.message || 'Failed to save API base');
     }
   };
+  
+  const fetchSchemas = async () => {
+    setLoadingSchemas(true);
+    try {
+      const base = getHttpBase();
+      const res = await fetch(`${base}/api/schemas/list`, {
+        headers: { "ngrok-skip-browser-warning": "1" },
+      });
+      if (!res.ok) throw new Error(`List failed (${res.status})`);
+      const data: SchemaInfo[] = await res.json();
+      setSchemas(Array.isArray(data) ? data : []);
+      if (!selectedSchemaId && data?.length) {
+        setSelectedSchemaId(data[0].id);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to load schemas');
+    } finally {
+      setLoadingSchemas(false);
+    }
+  };
+
+  useEffect(() => {
+    // initial load of schemas
+    fetchSchemas().catch(() => {});
+  }, []);
   
   const uploadSchema = async () => {
     if (!schemaFile) {
@@ -183,6 +223,44 @@ const Index = () => {
       setUploading(false);
     }
   };
+  
+  const createSessionWithSelected = async () => {
+    if (!selectedSchemaId) {
+      toast.error("Please select a schema.");
+      return;
+    }
+    if (!patientName) {
+      toast.error("Please enter a patient name first.");
+      return;
+    }
+    setCreating(true);
+    try {
+      const base = getHttpBase();
+      const res = await fetch(`${base}/api/sessions/create`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'ngrok-skip-browser-warning': '1',
+        },
+        body: JSON.stringify({
+          schema_id: selectedSchemaId,
+          name: patientName,
+          patient_name: patientName,
+          doctor_name: doctorName,
+        }),
+      });
+      if (!res.ok) throw new Error(`Create session failed (${res.status})`);
+      const created = await res.json();
+      toast.success(`Session created${created?.id ? `: ${created.id}` : ''}`);
+      localStorage.setItem('SCHEMA_ID', selectedSchemaId);
+      (window as any).schema_id = selectedSchemaId;
+      setSchemaId(selectedSchemaId);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to create session');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const downloadCsv = async () => {
     if (!sessionId) return;
@@ -233,6 +311,38 @@ const Index = () => {
             <Button size="sm" variant="secondary" onClick={saveApiBase} aria-label="Save API base" disabled={pinging}>Save & Test</Button>
           </div>
           <p className="text-xs text-muted-foreground">Current: {getHttpBase()}</p>
+        </section>
+
+        <section className="mb-6 grid gap-2">
+          <Label htmlFor="schemaSelect">Select existing schema</Label>
+          <div className="flex items-center gap-3">
+            <Select
+              value={selectedSchemaId || undefined}
+              onValueChange={(val) => {
+                setSelectedSchemaId(val);
+                localStorage.setItem('SCHEMA_ID', val);
+                (window as any).schema_id = val;
+                setSchemaId(val);
+              }}
+            >
+              <SelectTrigger id="schemaSelect" className="w-full md:w-80">
+                <SelectValue placeholder={loadingSchemas ? 'Loading…' : (schemas.length ? 'Choose a schema' : 'No schemas found')} />
+              </SelectTrigger>
+              <SelectContent>
+                {schemas.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={fetchSchemas} disabled={loadingSchemas}>
+              {loadingSchemas ? 'Refreshing…' : 'Refresh'}
+            </Button>
+            <Button size="sm" variant="default" onClick={createSessionWithSelected} disabled={!selectedSchemaId || !patientName || creating}>
+              {creating ? 'Creating…' : 'Create Session'}
+            </Button>
+          </div>
         </section>
 
         <section className="mb-6 grid gap-2">
