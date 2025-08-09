@@ -1,5 +1,7 @@
 
 
+import { getWsBase } from "@/config/api";
+
 let ws: WebSocket | undefined;
 
 export default function WebSocketRecorder({
@@ -14,7 +16,9 @@ export default function WebSocketRecorder({
   onStatus?: (message: string) => void;
 }) {
   const connectWS = () => {
-    ws = new WebSocket(`wss://8fc0c45bcfa3.ngrok-free.app/ws/session/${encodeURIComponent(sessionId)}`);
+    const wsBase = getWsBase();
+    const url = `${wsBase}/ws/session/${encodeURIComponent(sessionId)}?ngrok-skip-browser-warning=1`;
+    ws = new WebSocket(url);
 
     ws.onmessage = (event: MessageEvent) => {
       try {
