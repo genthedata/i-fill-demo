@@ -37,7 +37,6 @@ export function useMedicalSession() {
           "ngrok-skip-browser-warning": "1",
         },
         body: JSON.stringify({
-          schema_id: (() => { try { return localStorage.getItem('SCHEMA_ID') || 'default'; } catch { return 'default'; } })(),
           name: patientName || `Session-${new Date().toISOString()}`,
           patient_name: patientName,
           doctor_name: doctorName,
