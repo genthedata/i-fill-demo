@@ -351,6 +351,10 @@ const Index = () => {
       });
       if (!createRes.ok) throw new Error(`Create session failed (${createRes.status})`);
       const created = await createRes.json();
+      if (created?.id) {
+        try { localStorage.setItem('SESSION_ID', created.id); } catch {}
+        (window as any).session_id = created.id;
+      }
       toast.success(`Session created${created?.id ? `: ${created.id}` : ''}`);
     } catch (e: any) {
       toast.error(e?.message || 'Failed to upload and create session');

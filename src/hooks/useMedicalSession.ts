@@ -47,6 +47,8 @@ export function useMedicalSession() {
       if (!res.ok) throw new Error(`Create session failed (${res.status})`);
       const data = await res.json().catch(() => ({}));
       const id = data.session_id || data.id || crypto.randomUUID();
+      try { localStorage.setItem('SESSION_ID', id); } catch {}
+      (window as any).session_id = id;
       setSessionId(id);
       return id as string;
     } catch (e: any) {
