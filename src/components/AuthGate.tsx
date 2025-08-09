@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Navigate } from "react-router-dom";
+import { getSession, onAuthChange } from "@/lib/demoAuth";
 
 const AuthGate = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
@@ -8,19 +8,19 @@ const AuthGate = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
+    const init = () => {
+      const sess = getSession();
       if (!mounted) return;
-      setAuthed(!!data.session);
+      setAuthed(!!sess);
       setLoading(false);
     };
     init();
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthed(!!session);
+    const unsubscribe = onAuthChange((sess) => {
+      setAuthed(!!sess);
     });
     return () => {
       mounted = false;
-      sub.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
