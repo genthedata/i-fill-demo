@@ -119,6 +119,56 @@ const Index = () => {
     }
   };
   
+  const uploadAndCreate = async () => {
+    if (!schemaFile) {
+      toast.error("Please select a schema file first.");
+      return;
+    }
+    if (!patientName) {
+      toast.error("Please enter a patient name first.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const base = getHttpBase();
+      const fd = new FormData();
+      fd.append('file', schemaFile);
+      const uploadRes = await fetch(`${base}/api/schemas/upload`, {
+        method: 'POST',
+        headers: { "ngrok-skip-browser-warning": "1" },
+        body: fd,
+      });
+      if (!uploadRes.ok) throw new Error(`Upload failed (${uploadRes.status})`);
+      const uploaded = await uploadRes.json();
+      const id = uploaded?.id as string | undefined;
+      if (!id) throw new Error('Upload succeeded but no schema id returned');
+      localStorage.setItem('SCHEMA_ID', id);
+      (window as any).schema_id = id;
+      setSchemaId(id);
+
+      const createRes = await fetch(`${base}/api/sessions/create`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'ngrok-skip-browser-warning': '1',
+        },
+        body: JSON.stringify({
+          schema_id: id,
+          name: patientName,
+          patient_name: patientName,
+          doctor_name: doctorName,
+        }),
+      });
+      if (!createRes.ok) throw new Error(`Create session failed (${createRes.status})`);
+      const created = await createRes.json();
+      toast.success(`Session created${created?.id ? `: ${created.id}` : ''}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to upload and create session');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const downloadCsv = async () => {
     if (!sessionId) return;
     try {
@@ -161,20 +211,21 @@ const Index = () => {
           </Button>
         </div>
         <section className="mb-6 grid gap-2">
-          <Label htmlFor="schemaFile">Upload Schema</Label>
+          <Label htmlFor="schemaFile">Upload CSV template</Label>
           <div className="flex items-center gap-3">
-            <Input id="schemaFile" type="file" accept=".json,.yaml,.yml,.txt" onChange={(e) => setSchemaFile(e.target.files?.[0] || null)} />
-            <Button size="sm" onClick={uploadSchema} disabled={!schemaFile || uploading}>
+            <Input id="schemaFile" type="file" accept=".csv,.json,.yaml,.yml,.txt" onChange={(e) => setSchemaFile(e.target.files?.[0] || null)} />
+            <Button size="sm" onClick={uploadSchema} disabled={!schemaFile || uploading} aria-label="Upload schema only">
               {uploading ? 'Uploading...' : 'Upload'}
             </Button>
+            <Button size="sm" variant="default" onClick={uploadAndCreate} disabled={!schemaFile || !patientName || uploading} aria-label="Upload schema and create session">
+              {uploading ? 'Processing…' : 'Upload & Create Session'}
+            </Button>
           </div>
+          <Label htmlFor="patientNameInput">Patient name</Label>
+          <Input id="patientNameInput" placeholder="e.g., Jane Doe" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
           {schemaId && <p className="text-xs text-muted-foreground">Current schema_id: {schemaId}</p>}
         </section>
 
-        <section className="mb-6 grid gap-2">
-          <Label htmlFor="patientName">Patient Name</Label>
-          <Input id="patientName" placeholder="e.g., Jane Doe" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
-        </section>
 
         <section className="mb-8 flex items-center gap-4">
           {!isRecording ? (
