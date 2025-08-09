@@ -15,7 +15,7 @@ import { getHttpBase } from "@/config/api";
 const Index = () => {
   const [patientName, setPatientName] = useState("");
   const [token] = useState<string | undefined>(undefined);
-  const [doctorName] = useState<string | undefined>("Dr. Demo");
+  const [doctorName] = useState<string | undefined>("Dr. John Smith");
 
   const { sessionId, isRecording, transcript, fields, error, start, stop } = useMedicalSession();
 
@@ -86,22 +86,22 @@ const Index = () => {
         </header>
 
         <section className="mb-6 grid gap-2">
-          <Label htmlFor="patient">Patient Name</Label>
-          <Input id="patient" placeholder="e.g., Jane Doe" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
+          <Label htmlFor="patientName">Patient Name</Label>
+          <Input id="patientName" placeholder="e.g., Jane Doe" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
         </section>
 
         <section className="mb-8 flex items-center gap-4">
           {!isRecording ? (
-            <Button variant="record" size="xl" onClick={handleStart} disabled={!canStart} aria-label="Start recording">
+            <Button id="startStopBtn" variant="record" size="xl" onClick={handleStart} disabled={!canStart} aria-label="Start recording">
               <Mic /> Start Recording
             </Button>
           ) : (
-            <Button variant="recording" size="xl" onClick={handleStop} aria-label="Stop recording">
+            <Button id="startStopBtn" variant="recording" size="xl" onClick={handleStop} aria-label="Stop recording">
               <Square /> Stop Recording
             </Button>
           )}
           {sessionId && (
-            <Button variant="outline" onClick={downloadCsv} aria-label="Download CSV">
+            <Button id="downloadBtn" variant="outline" onClick={downloadCsv} aria-label="Download CSV">
               <Download className="mr-2" /> Download CSV
             </Button>
           )}
@@ -111,7 +111,7 @@ const Index = () => {
           <section className="rounded-lg border p-4 shadow-sm">
             <h2 className="mb-3 text-lg font-medium">Live Transcription</h2>
             <ScrollArea className="h-72 rounded-md border bg-muted/20">
-              <div ref={listRef} className="h-72 overflow-y-auto p-3">
+              <div ref={listRef} id="transcription" className="h-72 overflow-y-auto p-3">
                 {transcript.length === 0 && (
                   <p className="text-sm text-muted-foreground">Waiting for audio…</p>
                 )}
@@ -132,15 +132,15 @@ const Index = () => {
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label>Symptoms</Label>
-                <Textarea value={fields.symptoms} readOnly className="min-h-24" />
+                <Textarea id="symptoms" value={fields.symptoms} readOnly className="min-h-24" />
               </div>
               <div className="grid gap-2">
                 <Label>Drug / Medication to Consume</Label>
-                <Textarea value={fields.medications} readOnly className="min-h-24" />
+                <Input id="medication" value={fields.medications} readOnly />
               </div>
               <div className="grid gap-2">
                 <Label>Doctor’s Conclusion & Instructions</Label>
-                <Textarea value={fields.conclusion} readOnly className="min-h-24" />
+                <Textarea id="conclusion" value={fields.conclusion} readOnly className="min-h-24" />
               </div>
             </div>
           </section>
