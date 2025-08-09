@@ -6,7 +6,7 @@ export function getHttpBase(): string {
     return (w?.BASE_URL as string) || localStorage.getItem("API_BASE_URL") || DEFAULT_HTTP_BASE;
   } catch {
     const w = typeof window !== 'undefined' ? (window as any) : undefined;
-    return (w?.BASE_URL as string) || DEFAULT_HTTP_BASE;
+    return (w?.BASE_URL as string) || DEFAULT_HTTP_BASE;m
   }
 }
 
