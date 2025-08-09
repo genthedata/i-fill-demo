@@ -52,7 +52,8 @@ export function useVoiceSession() {
           id
         )}&patient_name=${encodeURIComponent(patientName)}${doctorName ? `&doctor_name=${encodeURIComponent(doctorName)}` : ""}${
           token ? `&token=${encodeURIComponent(token)}` : ""
-        }`;
+        }&ngrok-skip-browser-warning=1`;
+
 
 
         const ws = new WebSocket(voiceUrl);

@@ -17,7 +17,7 @@ export function useUpdates(sessionId: string | null, token?: string) {
     const wsBase = getWsBase();
     const url = `${wsBase}/ws/updates/${encodeURIComponent(sessionId)}${
       token ? `?token=${encodeURIComponent(token)}` : ""
-    }`;
+    }${token ? "&" : "?"}ngrok-skip-browser-warning=1`;
     const ws = new WebSocket(url);
 
     ws.onmessage = (ev) => {
