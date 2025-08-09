@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mic, Square, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
 import { getHttpBase, getWsBase } from "@/config/api";
@@ -60,7 +60,7 @@ const Index = () => {
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
 
-  const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
+  const { sessionId, transcript, fields, error, wsStatus } = useMedicalSession();
   const passiveWsRef = useRef<WebSocket | null>(null);
   const [transcriptionText, setTranscriptionText] = useState("");
 
@@ -86,29 +86,9 @@ const Index = () => {
     if (sid) setSelectedSessionId(sid);
   }, []);
 
-  const canStart = useMemo(() => !!patientName && !isRecording, [patientName, isRecording]);
+  
 
-  const handleStart = async () => {
-    if (!patientName) {
-      toast.error("Please enter a patient name first.");
-      return;
-    }
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      toast.error("Microphone permission is required.");
-      return;
-    }
-    try {
-      await start({ patientName, token, doctorName });
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to start session");
-    }
-  };
 
-  const handleStop = () => {
-    stop();
-  };
 
   const pingApi = async () => {
     setPinging(true);
@@ -591,15 +571,6 @@ const Index = () => {
 
 
         <section className="mb-8 flex items-center gap-4">
-          {!isRecording ? (
-            <Button id="startStopBtn" variant="record" size="xl" onClick={handleStart} disabled={!canStart} aria-label="Start recording">
-              <Mic /> Start Recording
-            </Button>
-          ) : (
-            <Button id="startStopBtn" variant="recording" size="xl" onClick={handleStop} aria-label="Stop recording">
-              <Square /> Stop Recording
-            </Button>
-          )}
           {exportCsvUrl && (
             <Button id="downloadBtn" variant="outline" asChild aria-label="Download CSV">
               <a href={exportCsvUrl} target="_blank" rel="noopener noreferrer">
