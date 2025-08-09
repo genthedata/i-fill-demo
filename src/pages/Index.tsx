@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Mic, Square, Download } from "lucide-react";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
-import { getHttpBase } from "@/config/api";
+import { getHttpBase, getWsBase } from "@/config/api";
 
 type SchemaInfo = {
   id: string;
@@ -60,6 +60,7 @@ const Index = () => {
   const [loadingSession, setLoadingSession] = useState(false);
 
   const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
+  const passiveWsRef = useRef<WebSocket | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -229,7 +230,55 @@ const Index = () => {
   useEffect(() => {
     if (selectedSessionId) fetchSessionDetails(selectedSessionId);
   }, [selectedSessionId, apiBase]);
-  
+
+  // Passive WebSocket to receive field updates when not recording
+  useEffect(() => {
+    if (!selectedSessionId) {
+      if (passiveWsRef.current) { try { passiveWsRef.current.close(); } catch {} passiveWsRef.current = null; }
+      return;
+    }
+
+    // If live recording WS is connected, avoid duplicate passive connection
+    if (wsStatus === 'connected') {
+      if (passiveWsRef.current) { try { passiveWsRef.current.close(); } catch {} passiveWsRef.current = null; }
+      return;
+    }
+
+    const wsBase = getWsBase();
+    const url = `${wsBase}/ws/session/${encodeURIComponent(selectedSessionId)}?ngrok-skip-browser-warning=1`;
+    const ws = new WebSocket(url);
+    passiveWsRef.current = ws;
+
+    ws.onmessage = (ev) => {
+      try {
+        const data = typeof ev.data === 'string' ? JSON.parse(ev.data) : {};
+        setSessionDetails((prev) => {
+          const prevFields = (prev?.fields || {}) as any;
+          let next = { ...prevFields } as any;
+          if (data && typeof data.field === 'string' && typeof data.value === 'string') {
+            const f = data.field.toLowerCase();
+            if (f.includes('symptom')) next.symptoms = data.value;
+            else if (f.includes('drug') || f.includes('medication') || f.includes('medicine')) next.medications = data.value;
+            else if (f.includes('conclusion') || f.includes('instruction') || f.includes('note')) next.conclusion = data.value;
+          } else {
+            next = {
+              symptoms: data.symptoms ?? data.symptom ?? next.symptoms,
+              medications: data.medications ?? data.drugs ?? data.medication ?? next.medications,
+              conclusion: data.conclusion ?? data.instructions ?? next.conclusion,
+            };
+          }
+          return { ...(prev || { id: selectedSessionId }), fields: next } as SessionDetails;
+        });
+      } catch {}
+    };
+
+    ws.onclose = () => { if (passiveWsRef.current === ws) passiveWsRef.current = null; };
+    ws.onerror = () => {};
+
+    return () => {
+      try { ws.close(); } catch {}
+    };
+  }, [selectedSessionId, wsStatus, apiBase]);
   const uploadSchema = async () => {
     if (!schemaFile) {
       toast.error("Please select a schema file first.");
@@ -356,6 +405,15 @@ const Index = () => {
       ? `${getHttpBase()}/api/export/${encodeURIComponent(selectedSessionId)}/csv`
       : null;
   }, [selectedSessionId, apiBase]);
+
+  const displayFields = useMemo(() => {
+    const f = (sessionDetails?.fields || {}) as any;
+    return {
+      symptoms: f.symptoms ?? f.symptom ?? fields.symptoms,
+      medications: f.medications ?? f.medication ?? f.drugs ?? fields.medications,
+      conclusion: f.conclusion ?? f.instructions ?? fields.conclusion,
+    };
+  }, [sessionDetails, fields]);
 
   return (
     <>
@@ -552,20 +610,20 @@ const Index = () => {
 
           <section className="rounded-lg border p-4 shadow-sm">
             <h2 className="mb-3 text-lg font-medium">Auto-filled Medical Record</h2>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label>Symptoms</Label>
-                <Textarea id="symptoms" value={fields.symptoms} readOnly className="min-h-24" />
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label>Symptoms</Label>
+                  <Textarea id="symptoms" value={displayFields.symptoms} readOnly className="min-h-24" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Drug / Medication to Consume</Label>
+                  <Input id="medication" value={displayFields.medications} readOnly />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Doctor’s Conclusion & Instructions</Label>
+                  <Textarea id="conclusion" value={displayFields.conclusion} readOnly className="min-h-24" />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label>Drug / Medication to Consume</Label>
-                <Input id="medication" value={fields.medications} readOnly />
-              </div>
-              <div className="grid gap-2">
-                <Label>Doctor’s Conclusion & Instructions</Label>
-                <Textarea id="conclusion" value={fields.conclusion} readOnly className="min-h-24" />
-              </div>
-            </div>
           </section>
         </div>
       </main>
