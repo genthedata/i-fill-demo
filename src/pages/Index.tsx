@@ -351,25 +351,11 @@ const Index = () => {
     }
   };
 
-  const downloadCsv = async () => {
-    if (!sessionId) return;
-    try {
-      const base = getHttpBase();
-      const res = await fetch(`${base}/api/export/${encodeURIComponent(sessionId)}/csv`, {
-        headers: { "ngrok-skip-browser-warning": "1" },
-      });
-      if (!res.ok) throw new Error(`Export failed (${res.status})`);
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${patientName || 'record'}-${sessionId}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      toast.success('CSV downloaded');
-    } catch (e: any) {
-      toast.error(e?.message || 'Export failed');
-    }
-  };
+  const exportCsvUrl = useMemo(() => {
+    return selectedSessionId
+      ? `${getHttpBase()}/api/export/${encodeURIComponent(selectedSessionId)}/csv`
+      : null;
+  }, [selectedSessionId, apiBase]);
 
   return (
     <>
@@ -535,9 +521,11 @@ const Index = () => {
               <Square /> Stop Recording
             </Button>
           )}
-          {sessionId && (
-            <Button id="downloadBtn" variant="outline" onClick={downloadCsv} aria-label="Download CSV">
-              <Download className="mr-2" /> Download CSV
+          {selectedSessionId && exportCsvUrl && (
+            <Button id="downloadBtn" variant="outline" asChild aria-label="Download CSV">
+              <a href={exportCsvUrl} target="_blank" rel="noopener noreferrer">
+                <Download className="mr-2" /> Download CSV
+              </a>
             </Button>
           )}
         </section>
