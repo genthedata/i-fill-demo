@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import SEO from "@/components/SEO";
 import SignatureEffect from "@/components/SignatureEffect";
@@ -14,6 +14,7 @@ import { Mic, Square, Download } from "lucide-react";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
 import { getHttpBase, getWsBase } from "@/config/api";
+import RecorderControls from "@/components/RecorderControls";
 
 type SchemaInfo = {
   id: string;
@@ -419,6 +420,22 @@ const Index = () => {
     };
   }, [sessionDetails, fields]);
 
+  const effectiveSessionId = useMemo(() => (
+    selectedSessionId || sessionId || (typeof window !== 'undefined' ? localStorage.getItem('SESSION_ID') : null)
+  ), [selectedSessionId, sessionId]);
+
+  const handleFieldUpdate = useCallback((field: string, value: string) => {
+    setSessionDetails((prev) => {
+      const prevFields = (prev?.fields || {}) as any;
+      const f = (field || '').toLowerCase();
+      const next = { ...prevFields } as any;
+      if (f.includes('symptom')) next.symptoms = value;
+      else if (f.includes('drug') || f.includes('medication') || f.includes('medicine')) next.medications = value;
+      else if (f.includes('conclusion') || f.includes('instruction') || f.includes('note')) next.conclusion = value;
+      return { ...(prev || { id: effectiveSessionId || '' }), fields: next } as SessionDetails;
+    });
+  }, [effectiveSessionId]);
+
   return (
     <>
       <SEO title="I-Fill-Forms – Automated Speech-to-Form EMR" description="Real-time speech-to-form medical records. Start recording, watch fields fill themselves, export to CSV." />
@@ -589,6 +606,14 @@ const Index = () => {
                 <Download className="mr-2" /> Download CSV
               </a>
             </Button>
+          )}
+        </section>
+
+        <section className="mb-8 grid gap-2">
+          <Label>Custom Recorder (send on stop)</Label>
+          <RecorderControls sessionId={effectiveSessionId} onFieldUpdate={handleFieldUpdate} />
+          {!effectiveSessionId && (
+            <p className="text-xs text-muted-foreground">Create or select a session to enable recording.</p>
           )}
         </section>
 
