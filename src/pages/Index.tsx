@@ -10,13 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mic, Square, Download } from "lucide-react";
 import { useVoiceSession } from "@/hooks/useVoiceSession";
 import { useUpdates } from "@/hooks/useUpdates";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Index = () => {
   const [patientName, setPatientName] = useState("");
-  const [token, setToken] = useState<string | undefined>(undefined);
-  const [doctorName, setDoctorName] = useState<string | undefined>(undefined);
+  const [token] = useState<string | undefined>(undefined);
+  const [doctorName] = useState<string | undefined>("Dr. Demo");
 
   const { sessionId, isRecording, transcript, error, start, stop } = useVoiceSession();
   const fields = useUpdates(sessionId, token);
@@ -28,16 +27,6 @@ const Index = () => {
     }
   }, [transcript.length]);
 
-  useEffect(() => {
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      setToken(data.session?.access_token || undefined);
-      const { data: u } = await supabase.auth.getUser();
-      const name = (u.user?.user_metadata as any)?.full_name || (u.user?.user_metadata as any)?.name || u.user?.email;
-      setDoctorName(name || undefined);
-    };
-    init();
-  }, []);
 
   useEffect(() => {
     if (error) toast.error(error);
