@@ -21,8 +21,9 @@ export function useMedicalSession() {
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [fields, setFields] = useState<RecordFields>(initialFields);
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [wsStatus, setWsStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+ 
+   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -71,11 +72,13 @@ export function useMedicalSession() {
     const wsBase = getWsBase();
     const wsUrl = `${wsBase}/ws/session/${encodeURIComponent(id)}${token ? `?token=${encodeURIComponent(token)}` : ""}${token ? "&" : "?"}ngrok-skip-browser-warning=1`;
 
+    setWsStatus('connecting');
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = async () => {
-      try {
+      setWsStatus('connected');
+       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaStreamRef.current = stream;
 
@@ -138,11 +141,13 @@ export function useMedicalSession() {
 
     ws.onerror = (e) => {
       console.error(e);
+      setWsStatus('error');
       setError('Connection error. Please ensure the backend URL is reachable.');
     };
 
     ws.onclose = () => {
       setIsRecording(false);
+      setWsStatus('disconnected');
     };
   }, [createSession]);
 
@@ -152,5 +157,5 @@ export function useMedicalSession() {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) wsRef.current.close();
   }, []);
 
-  return { sessionId, isRecording, transcript, fields, error, start, stop } as const;
+  return { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } as const;
 }

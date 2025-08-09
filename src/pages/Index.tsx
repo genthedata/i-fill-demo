@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Mic, Square, Download } from "lucide-react";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
@@ -16,8 +17,10 @@ const Index = () => {
   const [patientName, setPatientName] = useState("");
   const [token] = useState<string | undefined>(undefined);
   const [doctorName] = useState<string | undefined>("Dr. John Smith");
+  const [httpStatus, setHttpStatus] = useState<'idle' | 'ok' | 'fail'>("idle");
+  const [pinging, setPinging] = useState(false);
 
-  const { sessionId, isRecording, transcript, fields, error, start, stop } = useMedicalSession();
+  const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
 
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -55,6 +58,28 @@ const Index = () => {
     stop();
   };
 
+  const pingApi = async () => {
+    setPinging(true);
+    try {
+      const base = getHttpBase();
+      const res = await fetch(`${base}/api/export/__ping__/csv`, {
+        headers: { "ngrok-skip-browser-warning": "1" },
+      });
+      if (res.ok || (res.status >= 200 && res.status < 500)) {
+        setHttpStatus('ok');
+        toast.success('API reachable');
+      } else {
+        setHttpStatus('fail');
+        toast.error(`API responded with ${res.status}`);
+      }
+    } catch {
+      setHttpStatus('fail');
+      toast.error('API unreachable');
+    } finally {
+      setPinging(false);
+    }
+  };
+
   const downloadCsv = async () => {
     if (!sessionId) return;
     try {
@@ -84,6 +109,18 @@ const Index = () => {
           <h1 className="text-2xl font-semibold">Automated Speech-to-Form Medical Records</h1>
           <SignatureEffect />
         </header>
+
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Badge variant={httpStatus === 'ok' ? 'default' : httpStatus === 'fail' ? 'destructive' : 'secondary'}>
+            API: {httpStatus === 'ok' ? 'Reachable' : httpStatus === 'fail' ? 'Unreachable' : 'Idle'}
+          </Badge>
+          <Badge variant={wsStatus === 'connected' ? 'default' : wsStatus === 'connecting' ? 'secondary' : 'destructive'}>
+            WS: {wsStatus.charAt(0).toUpperCase() + wsStatus.slice(1)}
+          </Badge>
+          <Button size="sm" variant="outline" onClick={pingApi} disabled={pinging}>
+            Ping API
+          </Button>
+        </div>
 
         <section className="mb-6 grid gap-2">
           <Label htmlFor="patientName">Patient Name</Label>
