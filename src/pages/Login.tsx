@@ -17,7 +17,7 @@ const Login = () => {
     try {
       await login(email.trim(), password);
       toast.success("Welcome, doctor");
-      window.location.href = "/app";
+      window.location.href = "/splash-app";
     } catch (err: any) {
       toast.error(err?.message || "Invalid credentials");
     } finally {
