@@ -36,6 +36,8 @@ const Index = () => {
   const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
   const [loadingSchemas, setLoadingSchemas] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [schemaDetails, setSchemaDetails] = useState<SchemaInfo | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
 
@@ -143,6 +145,25 @@ const Index = () => {
     // initial load of schemas
     fetchSchemas().catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!selectedSchemaId) {
+      setSchemaDetails(null);
+      return;
+    }
+    setLoadingDetails(true);
+    const base = getHttpBase();
+    fetch(`${base}/api/schemas/${encodeURIComponent(selectedSchemaId)}`, {
+      headers: { "ngrok-skip-browser-warning": "1" },
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Details failed (${res.status})`);
+        const data: SchemaInfo = await res.json();
+        setSchemaDetails(data);
+      })
+      .catch((e: any) => toast.error(e?.message || 'Failed to load schema details'))
+      .finally(() => setLoadingDetails(false));
+  }, [selectedSchemaId, apiBase]);
   
   const uploadSchema = async () => {
     if (!schemaFile) {
@@ -328,7 +349,7 @@ const Index = () => {
               <SelectTrigger id="schemaSelect" className="w-full md:w-80">
                 <SelectValue placeholder={loadingSchemas ? 'Loading…' : (schemas.length ? 'Choose a schema' : 'No schemas found')} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-popover">
                 {schemas.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
@@ -342,6 +363,25 @@ const Index = () => {
             <Button size="sm" variant="default" onClick={createSessionWithSelected} disabled={!selectedSchemaId || !patientName || creating}>
               {creating ? 'Creating…' : 'Create Session'}
             </Button>
+          </div>
+        </section>
+
+        <section className="mb-6 grid gap-2">
+          <Label>Schema fields preview</Label>
+          <div className="rounded-md border bg-muted/20 p-3">
+            {!selectedSchemaId ? (
+              <p className="text-sm text-muted-foreground">Select a schema to preview its fields.</p>
+            ) : loadingDetails ? (
+              <p className="text-sm text-muted-foreground">Loading fields…</p>
+            ) : schemaDetails?.fields?.length ? (
+              <ul className="list-disc pl-5 text-sm">
+                {schemaDetails.fields.map((f, idx) => (
+                  <li key={idx}>{f}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No fields found for this schema.</p>
+            )}
           </div>
         </section>
 
