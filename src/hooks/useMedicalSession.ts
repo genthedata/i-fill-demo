@@ -113,13 +113,20 @@ export function useMedicalSession() {
         if (typeof data.transcript === 'string') {
           setTranscript((prev) => [...prev, { id: crypto.randomUUID(), text: data.transcript, ts: Date.now() }]);
         }
-        const next: RecordFields = {
-          symptoms: data.symptoms ?? data.symptom ?? fields.symptoms,
-          medications: data.medications ?? data.drugs ?? data.medication ?? fields.medications,
-          conclusion: data.conclusion ?? data.instructions ?? fields.conclusion,
-        };
-        if (next.symptoms !== fields.symptoms || next.medications !== fields.medications || next.conclusion !== fields.conclusion) {
-          setFields(next);
+        if (data && typeof data.field === 'string' && typeof data.value === 'string') {
+          const f = data.field.toLowerCase();
+          setFields((prev) => {
+            if (f.includes('symptom')) return { ...prev, symptoms: data.value };
+            if (f.includes('drug') || f.includes('medication') || f.includes('medicine')) return { ...prev, medications: data.value };
+            if (f.includes('conclusion') || f.includes('instruction') || f.includes('note')) return { ...prev, conclusion: data.value };
+            return prev;
+          });
+        } else {
+          setFields((prev) => ({
+            symptoms: data.symptoms ?? data.symptom ?? prev.symptoms,
+            medications: data.medications ?? data.drugs ?? data.medication ?? prev.medications,
+            conclusion: data.conclusion ?? data.instructions ?? prev.conclusion,
+          }));
         }
       } catch {}
     };
@@ -132,7 +139,7 @@ export function useMedicalSession() {
     ws.onclose = () => {
       setIsRecording(false);
     };
-  }, [createSession, fields]);
+  }, [createSession]);
 
   useEffect(() => () => {
     try { mediaRecorderRef.current?.stop(); } catch {}

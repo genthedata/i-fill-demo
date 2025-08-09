@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mic, Square, Download } from "lucide-react";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
-
+import { getHttpBase } from "@/config/api";
 
 const Index = () => {
   const [patientName, setPatientName] = useState("");
@@ -44,31 +44,32 @@ const Index = () => {
       toast.error("Microphone permission is required.");
       return;
     }
-    await start({ patientName, token, doctorName });
+    try {
+      await start({ patientName, token, doctorName });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to start session");
+    }
   };
 
   const handleStop = () => {
     stop();
   };
 
-  const downloadDoc = async () => {
+  const downloadCsv = async () => {
     if (!sessionId) return;
     try {
-      const content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Medical Record</title></head><body>
-        <h2>Medical Record</h2>
-        <p><strong>Doctor:</strong> ${doctorName || ''}</p>
-        <p><strong>Patient:</strong> ${patientName || ''}</p>
-        <h3>Symptoms</h3><p>${(fields.symptoms || '').replace(/\n/g, '<br/>')}</p>
-        <h3>Drug / Medication</h3><p>${(fields.medications || '').replace(/\n/g, '<br/>')}</p>
-        <h3>Doctor’s Conclusion & Instructions</h3><p>${(fields.conclusion || '').replace(/\n/g, '<br/>')}</p>
-      </body></html>`;
-      const blob = new Blob([content], { type: 'application/msword' });
+      const base = getHttpBase();
+      const res = await fetch(`${base}/api/export/${encodeURIComponent(sessionId)}/csv`, {
+        headers: { "ngrok-skip-browser-warning": "1" },
+      });
+      if (!res.ok) throw new Error(`Export failed (${res.status})`);
+      const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `${patientName || 'record'}-${sessionId}.doc`;
+      a.download = `${patientName || 'record'}-${sessionId}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
-      toast.success('Document downloaded');
+      toast.success('CSV downloaded');
     } catch (e: any) {
       toast.error(e?.message || 'Export failed');
     }
@@ -77,7 +78,7 @@ const Index = () => {
   return (
     <>
       <SEO title="I-Fill-Forms – Automated Speech-to-Form EMR" description="Real-time speech-to-form medical records. Start recording, watch fields fill themselves, export to CSV." />
-      <Navbar />
+      <Navbar doctorName={doctorName} />
       <main className="container py-8">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold">Automated Speech-to-Form Medical Records</h1>
@@ -100,8 +101,8 @@ const Index = () => {
             </Button>
           )}
           {sessionId && (
-            <Button variant="outline" onClick={downloadDoc} aria-label="Download Document">
-              <Download className="mr-2" /> Export Document
+            <Button variant="outline" onClick={downloadCsv} aria-label="Download CSV">
+              <Download className="mr-2" /> Download CSV
             </Button>
           )}
         </section>

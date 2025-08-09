@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 
-const Navbar = () => {
-  const name = "Dr. Demo";
+type Props = { doctorName?: string };
+const Navbar = ({ doctorName }: Props) => {
+  const name = doctorName || "Dr. Demo";
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container flex h-14 items-center justify-between">
