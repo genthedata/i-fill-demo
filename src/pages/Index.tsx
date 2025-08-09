@@ -8,10 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, Square, Download } from "lucide-react";
-import { useVoiceSession } from "@/hooks/useVoiceSession";
-import { useUpdates } from "@/hooks/useUpdates";
+import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
-import { getHttpBase } from "@/config/api";
 
 
 const Index = () => {
@@ -19,8 +17,7 @@ const Index = () => {
   const [token] = useState<string | undefined>(undefined);
   const [doctorName] = useState<string | undefined>("Dr. Demo");
 
-  const { sessionId, isRecording, transcript, error, start, stop } = useVoiceSession();
-  const fields = useUpdates(sessionId, token);
+  const { sessionId, isRecording, transcript, fields, error, start, stop } = useMedicalSession();
 
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -54,20 +51,24 @@ const Index = () => {
     stop();
   };
 
-  const downloadCsv = async () => {
+  const downloadDoc = async () => {
     if (!sessionId) return;
-    const base = getHttpBase();
-    const url = `${base}/api/export/${encodeURIComponent(sessionId)}/csv`;
     try {
-      const res = await fetch(url, { headers: { 'ngrok-skip-browser-warning': '1' } });
-      if (!res.ok) throw new Error("Export failed");
-      const blob = await res.blob();
+      const content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Medical Record</title></head><body>
+        <h2>Medical Record</h2>
+        <p><strong>Doctor:</strong> ${doctorName || ''}</p>
+        <p><strong>Patient:</strong> ${patientName || ''}</p>
+        <h3>Symptoms</h3><p>${(fields.symptoms || '').replace(/\n/g, '<br/>')}</p>
+        <h3>Drug / Medication</h3><p>${(fields.medications || '').replace(/\n/g, '<br/>')}</p>
+        <h3>Doctor’s Conclusion & Instructions</h3><p>${(fields.conclusion || '').replace(/\n/g, '<br/>')}</p>
+      </body></html>`;
+      const blob = new Blob([content], { type: 'application/msword' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `${patientName || 'record'}-${sessionId}.csv`;
+      a.download = `${patientName || 'record'}-${sessionId}.doc`;
       a.click();
       URL.revokeObjectURL(a.href);
-      toast.success("CSV downloaded");
+      toast.success('Document downloaded');
     } catch (e: any) {
       toast.error(e?.message || 'Export failed');
     }
@@ -99,8 +100,8 @@ const Index = () => {
             </Button>
           )}
           {sessionId && (
-            <Button variant="outline" onClick={downloadCsv} aria-label="Download CSV">
-              <Download className="mr-2" /> Export CSV
+            <Button variant="outline" onClick={downloadDoc} aria-label="Download Document">
+              <Download className="mr-2" /> Export Document
             </Button>
           )}
         </section>
