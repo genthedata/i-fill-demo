@@ -16,6 +16,9 @@ export default function WebSocketRecorder({
   onStatus?: (message: string) => void;
 }) {
   const connectWS = () => {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      return; // avoid duplicate connections
+    }
     const wsBase = getWsBase();
     const url = `${wsBase}/ws/session/${encodeURIComponent(sessionId)}?ngrok-skip-browser-warning=1`;
     ws = new WebSocket(url);
@@ -47,26 +50,46 @@ export default function WebSocketRecorder({
       console.log("WebSocket connected");
     };
 
+    ws.onclose = () => {
+      console.log("WebSocket closed");
+      ws = undefined;
+    };
+
     ws.onerror = (err) => {
       console.error("WebSocket error", err);
     };
   };
 
   const sendAudio = (audioBlob: Blob) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn("WS not open; skipping audio send");
+      return;
+    }
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
       const base64 = (result?.split(",")[1]) || "";
-      ws?.send(
-        JSON.stringify({
-          type: "audio_chunk",
-          data: base64,
-          format: "webm",
-        })
-      );
+      try {
+        ws?.send(
+          JSON.stringify({
+            type: "audio_chunk",
+            data: base64,
+            format: "webm",
+          })
+        );
+      } catch (e) {
+        console.error("Failed to send audio chunk", e);
+      }
     };
     reader.readAsDataURL(audioBlob);
   };
 
-  return { connectWS, sendAudio } as const;
+  const disconnect = () => {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      try { ws.close(); } catch {}
+    }
+    ws = undefined;
+  };
+
+  return { connectWS, sendAudio, disconnect } as const;
 }

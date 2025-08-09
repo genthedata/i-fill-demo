@@ -70,6 +70,8 @@ export default function RecorderControls({ sessionId, onFieldUpdate, onTranscrip
 
   const stopRecording = useCallback(() => {
     try { mediaRecorderRef.current?.stop(); } catch {}
+    // ensure WS closes shortly after sending final audio
+    setTimeout(() => { try { wsRecRef.current?.disconnect(); } catch {} }, 800);
   }, []);
 
   const disabled = !sessionId;

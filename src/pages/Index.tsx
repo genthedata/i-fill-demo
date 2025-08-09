@@ -62,6 +62,7 @@ const Index = () => {
 
   const { sessionId, transcript, fields, error, wsStatus } = useMedicalSession();
   const passiveWsRef = useRef<WebSocket | null>(null);
+  const lastPassiveSessionIdRef = useRef<string | null>(null);
   const [transcriptionText, setTranscriptionText] = useState("");
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -217,12 +218,23 @@ const Index = () => {
   useEffect(() => {
     if (!selectedSessionId) {
       if (passiveWsRef.current) { try { passiveWsRef.current.close(); } catch {} passiveWsRef.current = null; }
+      lastPassiveSessionIdRef.current = null;
       return;
     }
 
     // If live recording WS is connected, avoid duplicate passive connection
     if (wsStatus === 'connected') {
       if (passiveWsRef.current) { try { passiveWsRef.current.close(); } catch {} passiveWsRef.current = null; }
+      lastPassiveSessionIdRef.current = selectedSessionId;
+      return;
+    }
+
+    // Avoid reconnecting if we already have an open connection for this session
+    if (
+      lastPassiveSessionIdRef.current === selectedSessionId &&
+      passiveWsRef.current &&
+      (passiveWsRef.current.readyState === WebSocket.OPEN || passiveWsRef.current.readyState === WebSocket.CONNECTING)
+    ) {
       return;
     }
 
@@ -230,6 +242,7 @@ const Index = () => {
     const url = `${wsBase}/ws/session/${encodeURIComponent(selectedSessionId)}?ngrok-skip-browser-warning=1`;
     const ws = new WebSocket(url);
     passiveWsRef.current = ws;
+    lastPassiveSessionIdRef.current = selectedSessionId;
 
     ws.onmessage = (ev) => {
       try {
