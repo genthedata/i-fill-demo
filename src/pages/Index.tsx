@@ -11,6 +11,8 @@ import { Mic, Square, Download } from "lucide-react";
 import { useVoiceSession } from "@/hooks/useVoiceSession";
 import { useUpdates } from "@/hooks/useUpdates";
 import { toast } from "sonner";
+import { getHttpBase } from "@/config/api";
+
 
 const Index = () => {
   const [patientName, setPatientName] = useState("");
@@ -54,9 +56,10 @@ const Index = () => {
 
   const downloadCsv = async () => {
     if (!sessionId) return;
-    const url = `/api/export/${encodeURIComponent(sessionId)}/csv${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+    const base = getHttpBase();
+    const url = `${base}/api/export/${encodeURIComponent(sessionId)}/csv`;
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: { 'ngrok-skip-browser-warning': '1' } });
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const a = document.createElement('a');

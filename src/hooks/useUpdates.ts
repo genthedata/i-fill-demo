@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getWsBase } from "@/config/api";
 
 export interface RecordFields {
   symptoms: string;
@@ -13,8 +14,8 @@ export function useUpdates(sessionId: string | null, token?: string) {
 
   useEffect(() => {
     if (!sessionId) return;
-    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const url = `${wsScheme}://${window.location.host}/ws/updates/${encodeURIComponent(sessionId)}${
+    const wsBase = getWsBase();
+    const url = `${wsBase}/ws/updates/${encodeURIComponent(sessionId)}${
       token ? `?token=${encodeURIComponent(token)}` : ""
     }`;
     const ws = new WebSocket(url);

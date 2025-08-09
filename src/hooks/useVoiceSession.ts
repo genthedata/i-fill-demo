@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getWsBase } from "@/config/api";
 
 export interface TranscriptItem {
   id: string;
@@ -46,12 +47,13 @@ export function useVoiceSession() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaStreamRef.current = stream;
 
-        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-        const voiceUrl = `${wsScheme}://${window.location.host}/api/conversation/voice-process?session_id=${encodeURIComponent(
+        const wsBase = getWsBase();
+        const voiceUrl = `${wsBase}/api/conversation/voice-process?session_id=${encodeURIComponent(
           id
         )}&patient_name=${encodeURIComponent(patientName)}${doctorName ? `&doctor_name=${encodeURIComponent(doctorName)}` : ""}${
           token ? `&token=${encodeURIComponent(token)}` : ""
         }`;
+
 
         const ws = new WebSocket(voiceUrl);
         wsRef.current = ws;
@@ -108,7 +110,7 @@ export function useVoiceSession() {
 
         ws.onerror = (e) => {
           console.error(e);
-          setError('Connection error.');
+          setError('Connection error. Please ensure the backend URL is reachable.');
           stop();
         };
         ws.onclose = () => {
