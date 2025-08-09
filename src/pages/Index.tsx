@@ -20,6 +20,10 @@ const Index = () => {
   const [httpStatus, setHttpStatus] = useState<'idle' | 'ok' | 'fail'>("idle");
   const [pinging, setPinging] = useState(false);
 
+  const [schemaFile, setSchemaFile] = useState<File | null>(null);
+  const [schemaId, setSchemaId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   const { sessionId, isRecording, transcript, fields, error, wsStatus, start, stop } = useMedicalSession();
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -33,6 +37,11 @@ const Index = () => {
   useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
+
+  useEffect(() => {
+    const id = localStorage.getItem('SCHEMA_ID');
+    if (id) setSchemaId(id);
+  }, []);
 
   const canStart = useMemo(() => !!patientName && !isRecording, [patientName, isRecording]);
 
@@ -79,7 +88,37 @@ const Index = () => {
       setPinging(false);
     }
   };
-
+  
+  const uploadSchema = async () => {
+    if (!schemaFile) {
+      toast.error("Please select a schema file first.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const base = getHttpBase();
+      const fd = new FormData();
+      fd.append('file', schemaFile);
+      const res = await fetch(`${base}/api/schemas/upload`, {
+        method: 'POST',
+        headers: { "ngrok-skip-browser-warning": "1" },
+        body: fd,
+      });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      const data = await res.json();
+      if (data?.id) {
+        localStorage.setItem('SCHEMA_ID', data.id);
+        (window as any).schema_id = data.id;
+        setSchemaId(data.id);
+      }
+      toast.success(`Schema uploaded${data?.name ? `: ${data.name}` : ''}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+  
   const downloadCsv = async () => {
     if (!sessionId) return;
     try {
@@ -121,6 +160,16 @@ const Index = () => {
             Ping API
           </Button>
         </div>
+        <section className="mb-6 grid gap-2">
+          <Label htmlFor="schemaFile">Upload Schema</Label>
+          <div className="flex items-center gap-3">
+            <Input id="schemaFile" type="file" accept=".json,.yaml,.yml,.txt" onChange={(e) => setSchemaFile(e.target.files?.[0] || null)} />
+            <Button size="sm" onClick={uploadSchema} disabled={!schemaFile || uploading}>
+              {uploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </div>
+          {schemaId && <p className="text-xs text-muted-foreground">Current schema_id: {schemaId}</p>}
+        </section>
 
         <section className="mb-6 grid gap-2">
           <Label htmlFor="patientName">Patient Name</Label>
