@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Mic, Square } from "lucide-react";
-import WebSocketRecorder from "@/lib/WebSocketRecorder";
+import { getHttpBase } from "@/config/api";
 
 interface Props {
   sessionId: string | null;
@@ -14,16 +14,14 @@ export default function RecorderControls({ sessionId, onFieldUpdate, onTranscrip
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
-  const wsRecRef = useRef<ReturnType<typeof WebSocketRecorder> | null>(null);
+  
 
   const [recording, setRecording] = useState(false);
 
   const startRecording = useCallback(async () => {
     if (!sessionId) return;
 
-    // Setup WS
-    wsRecRef.current = WebSocketRecorder({ sessionId, onFieldUpdate, onTranscription });
-    wsRecRef.current.connectWS();
+    // Using HTTP POST to /api/audio/chunk after recording stops (no WebSocket)
 
     // Request mic access and start MediaRecorder
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -51,17 +49,54 @@ export default function RecorderControls({ sessionId, onFieldUpdate, onTranscrip
     recorder.onstop = () => {
       try {
         const blob = new Blob(chunksRef.current, { type: mimeType || "audio/webm" });
-        wsRecRef.current?.sendAudio(blob);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const result = reader.result as string;
+          const base64 = (result?.split(",")[1]) || "";
+          try {
+            const res = await fetch(`${getHttpBase()}/api/audio/chunk`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': '1',
+              },
+              body: JSON.stringify({
+                session_id: sessionId,
+                audio_data: base64,
+              }),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (json && typeof json.transcription === 'string') {
+              onTranscription?.(json.transcription);
+            }
+            if (json && json.extracted_fields && typeof json.extracted_fields === 'object') {
+              try {
+                Object.entries(json.extracted_fields).forEach(([k, v]) => {
+                  onFieldUpdate(String(k), String(v ?? ''));
+                });
+              } catch {}
+            }
+          } catch (e) {
+            console.error('POST /api/audio/chunk failed', e);
+          } finally {
+            try { mediaStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
+            mediaStreamRef.current = null;
+            mediaRecorderRef.current = null;
+            chunksRef.current = [];
+            setRecording(false);
+          }
+        };
+        reader.readAsDataURL(blob);
+        return;
       } catch (e) {
-        console.error("Failed sending audio blob", e);
-      } finally {
-        // cleanup mic
-        try { mediaStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
-        mediaStreamRef.current = null;
-        mediaRecorderRef.current = null;
-        chunksRef.current = [];
-        setRecording(false);
+        console.error('Failed preparing audio blob', e);
       }
+      // Fallback cleanup
+      try { mediaStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
+      mediaStreamRef.current = null;
+      mediaRecorderRef.current = null;
+      chunksRef.current = [];
+      setRecording(false);
     };
 
     recorder.start();
@@ -70,8 +105,6 @@ export default function RecorderControls({ sessionId, onFieldUpdate, onTranscrip
 
   const stopRecording = useCallback(() => {
     try { mediaRecorderRef.current?.stop(); } catch {}
-    // ensure WS closes shortly after sending final audio
-    setTimeout(() => { try { wsRecRef.current?.disconnect(); } catch {} }, 800);
   }, []);
 
   const disabled = !sessionId;
