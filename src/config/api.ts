@@ -2,9 +2,11 @@ export const DEFAULT_HTTP_BASE = "https://8fc0c45bcfa3.ngrok-free.app";
 
 export function getHttpBase(): string {
   try {
-    return localStorage.getItem("API_BASE_URL") || DEFAULT_HTTP_BASE;
+    const w = typeof window !== 'undefined' ? (window as any) : undefined;
+    return (w?.BASE_URL as string) || localStorage.getItem("API_BASE_URL") || DEFAULT_HTTP_BASE;
   } catch {
-    return DEFAULT_HTTP_BASE;
+    const w = typeof window !== 'undefined' ? (window as any) : undefined;
+    return (w?.BASE_URL as string) || DEFAULT_HTTP_BASE;
   }
 }
 
