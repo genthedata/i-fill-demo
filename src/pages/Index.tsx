@@ -432,33 +432,14 @@ const Index = () => {
   return (
     <>
       <SEO title="I-Fill-Forms – Automated Speech-to-Form EMR" description="Real-time speech-to-form medical records. Start recording, watch fields fill themselves, export to CSV." />
-      <Navbar doctorName={doctorName} />
+      <Navbar doctorName={doctorName} wsStatus={wsStatus} />
       <main className="container py-8">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold">Automated Speech-to-Form Medical Records</h1>
           <SignatureEffect />
         </header>
 
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Badge variant={httpStatus === 'ok' ? 'default' : httpStatus === 'fail' ? 'destructive' : 'secondary'}>
-            API: {httpStatus === 'ok' ? 'Reachable' : httpStatus === 'fail' ? 'Unreachable' : 'Idle'}
-          </Badge>
-          <Badge variant={wsStatus === 'connected' ? 'default' : wsStatus === 'connecting' ? 'secondary' : 'destructive'}>
-            WS: {wsStatus.charAt(0).toUpperCase() + wsStatus.slice(1)}
-          </Badge>
-          <Button size="sm" variant="outline" onClick={pingApi} disabled={pinging}>
-            Ping API
-          </Button>
-        </div>
 
-        <section className="mb-4 grid gap-2">
-          <Label htmlFor="apiBaseInput">API Base URL</Label>
-          <div className="flex items-center gap-3">
-            <Input id="apiBaseInput" placeholder="https://your-api.example.com" value={apiBase} onChange={(e) => setApiBase(e.target.value)} />
-            <Button size="sm" variant="secondary" onClick={saveApiBase} aria-label="Save API base" disabled={pinging}>Save & Test</Button>
-          </div>
-          <p className="text-xs text-muted-foreground">Current: {getHttpBase()}</p>
-        </section>
 
         <section className="mb-6 grid gap-2">
           <Label htmlFor="schemaSelect">Select existing schema</Label>

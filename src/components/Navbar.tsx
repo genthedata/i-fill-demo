@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
+import SettingsSheet from "@/components/SettingsSheet";
 
-type Props = { doctorName?: string };
-const Navbar = ({ doctorName }: Props) => {
+type Props = { doctorName?: string; wsStatus?: string };
+const Navbar = ({ doctorName, wsStatus }: Props) => {
   const name = doctorName || "Dr. Demo";
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -11,6 +12,7 @@ const Navbar = ({ doctorName }: Props) => {
         </Link>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{name}</span>
+          <SettingsSheet wsStatus={wsStatus} />
         </div>
       </nav>
     </header>
