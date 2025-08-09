@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getWsBase } from "@/config/api";
+import { getHttpBase } from "@/config/api";
 
 export interface TranscriptItem {
   id: string;
@@ -16,6 +16,7 @@ export function useVoiceSession() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const ensureSession = useCallback(() => {
     if (!sessionId) {
@@ -27,6 +28,9 @@ export function useVoiceSession() {
   }, [sessionId]);
 
   const stop = useCallback(() => {
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
     try {
       mediaRecorderRef.current?.stop();
     } catch {}
@@ -44,82 +48,66 @@ export function useVoiceSession() {
       setError(null);
       const id = ensureSession();
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaStreamRef.current = stream;
+        // Use browser SpeechRecognition and send text chunks to backend
+        const SpeechRecognitionImpl = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognitionImpl) {
+          setError('Speech Recognition not supported in this browser.');
+          return;
+        }
 
-        const wsBase = getWsBase();
-        const voiceUrl = `${wsBase}/api/conversation/voice-process?session_id=${encodeURIComponent(
-          id
-        )}&patient_name=${encodeURIComponent(patientName)}${doctorName ? `&doctor_name=${encodeURIComponent(doctorName)}` : ""}${
-          token ? `&token=${encodeURIComponent(token)}` : ""
-        }&ngrok-skip-browser-warning=1`;
+        const recognition = new SpeechRecognitionImpl();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        recognitionRef.current = recognition;
 
-
-
-        const ws = new WebSocket(voiceUrl);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-          // Setup recorder once socket is open
-          const mimeTypes = [
-            'audio/webm;codecs=opus',
-            'audio/ogg;codecs=opus',
-            'audio/webm',
-            'audio/ogg',
-          ];
-          let mimeType = '';
-          for (const m of mimeTypes) {
-            if ((window as any).MediaRecorder && MediaRecorder.isTypeSupported(m)) {
-              mimeType = m;
-              break;
-            }
+        const sendToBackend = async (text: string) => {
+          if (!text) return;
+          const httpBase = getHttpBase();
+          try {
+            await fetch(`${httpBase}/api/conversation/process`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': '1',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              body: JSON.stringify({ session_id: id, text }),
+            });
+          } catch (e) {
+            console.error('sendToBackend error', e);
           }
-          const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-          mediaRecorderRef.current = recorder;
-
-          recorder.addEventListener('dataavailable', async (e) => {
-            if (!e.data || e.data.size === 0) return;
-            if (ws.readyState !== WebSocket.OPEN) return;
-            try {
-              const buf = await e.data.arrayBuffer();
-              ws.send(buf);
-            } catch {}
-          });
-          recorder.start(300);
-          setIsRecording(true);
         };
 
-        ws.onmessage = (ev) => {
-          try {
-            const data = typeof ev.data === 'string' ? ev.data : '';
-            if (data) {
-              let text = data;
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed && typeof parsed.text === 'string') text = parsed.text;
-                if (parsed && typeof parsed.transcript === 'string') text = parsed.transcript;
-              } catch {}
+        recognition.onresult = (e: any) => {
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const res = e.results[i];
+            const text: string = res[0]?.transcript ?? '';
+            if (res.isFinal && text) {
               setTranscript((prev) => [
                 ...prev,
                 { id: crypto.randomUUID(), text, ts: Date.now() }
               ]);
+              void sendToBackend(text);
             }
-          } catch (err: any) {
-            console.error('parse message error', err);
           }
         };
 
-        ws.onerror = (e) => {
-          console.error(e);
-          setError('Connection error. Please ensure the backend URL is reachable.');
-          stop();
-        };
-        ws.onclose = () => {
+        recognition.onerror = (e: any) => {
+          console.error('recognition error', e);
+          setError('Speech recognition error.');
           setIsRecording(false);
         };
+
+        recognition.onend = () => {
+          setIsRecording(false);
+        };
+
+        recognition.start();
+        setIsRecording(true);
       } catch (err: any) {
         console.error(err);
-        setError(err?.message || 'Microphone or connection error');
+        setError(err?.message || 'Microphone or recognition error');
         stop();
       }
     },
