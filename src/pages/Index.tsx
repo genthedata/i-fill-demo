@@ -480,7 +480,6 @@ const Index = () => {
             <div className="flex justify-end pt-6">
               <Button 
                 onClick={() => setCurrentStep(2)} 
-                disabled={!selectedSchemaId}
                 className="min-w-24"
               >
                 Next →
@@ -557,7 +556,6 @@ const Index = () => {
               </Button>
               <Button 
                 onClick={() => setCurrentStep(3)} 
-                disabled={!effectiveSessionId}
                 className="min-w-24"
               >
                 Next →
