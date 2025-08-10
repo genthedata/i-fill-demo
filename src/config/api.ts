@@ -1,4 +1,4 @@
-export const DEFAULT_HTTP_BASE = "https://ed19d692f9dd.ngrok-free.app";
+export const DEFAULT_HTTP_BASE = "https://e71d4db4b0ee.ngrok-free.app";
 
 export function getHttpBase(): string {
   try {
