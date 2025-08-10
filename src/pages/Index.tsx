@@ -386,7 +386,7 @@ const Index = () => {
         {/* Step Progress Indicator */}
         <div className="mb-8 flex justify-center">
           <div className="flex items-center space-x-4">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3, 4, 5].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                   currentStep === step 
@@ -397,7 +397,7 @@ const Index = () => {
                 }`}>
                   {step}
                 </div>
-                {step < 4 && (
+                {step < 5 && (
                   <div className={`w-12 h-0.5 mx-2 ${
                     currentStep > step ? 'bg-primary' : 'bg-muted'
                   }`} />
@@ -568,8 +568,8 @@ const Index = () => {
         {currentStep === 3 && (
           <div className="animate-fade-in space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold mb-2">Step 3: Record & Transcribe</h2>
-              <p className="text-muted-foreground">Start recording to capture voice and auto-fill fields</p>
+              <h2 className="text-xl font-semibold mb-2">Step 3: Voice Recording</h2>
+              <p className="text-muted-foreground">Start recording to capture voice and transcription</p>
             </div>
 
             <section className="grid gap-3">
@@ -587,6 +587,25 @@ const Index = () => {
                 <Textarea id="customTranscription" value={transcriptionText} readOnly className="min-h-24" placeholder="Live transcription will appear here..." />
               </div>
             </section>
+
+            <div className="flex justify-between pt-6">
+              <Button variant="outline" onClick={() => setCurrentStep(2)}>
+                ← Back
+              </Button>
+              <Button onClick={() => setCurrentStep(4)} className="min-w-24">
+                Next →
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Live Transcription & Auto-filled Records */}
+        {currentStep === 4 && (
+          <div className="animate-fade-in space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-semibold mb-2">Step 4: Live Transcription & Auto-filled Records</h2>
+              <p className="text-muted-foreground">View live transcription and auto-filled medical fields</p>
+            </div>
 
             <div className="grid gap-8 md:grid-cols-2">
               <section className="rounded-lg border p-4 shadow-sm">
@@ -628,21 +647,21 @@ const Index = () => {
             </div>
 
             <div className="flex justify-between pt-6">
-              <Button variant="outline" onClick={() => setCurrentStep(2)}>
+              <Button variant="outline" onClick={() => setCurrentStep(3)}>
                 ← Back
               </Button>
-              <Button onClick={() => setCurrentStep(4)} className="min-w-24">
+              <Button onClick={() => setCurrentStep(5)} className="min-w-24">
                 Next →
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 4: Export */}
-        {currentStep === 4 && (
+        {/* Step 5: Review & Export */}
+        {currentStep === 5 && (
           <div className="animate-fade-in space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold mb-2">Step 4: Review & Export</h2>
+              <h2 className="text-xl font-semibold mb-2">Step 5: Review & Export</h2>
               <p className="text-muted-foreground">Review the captured data and export to CSV</p>
             </div>
 
@@ -700,7 +719,7 @@ const Index = () => {
             </div>
 
             <div className="flex justify-between pt-6">
-              <Button variant="outline" onClick={() => setCurrentStep(3)}>
+              <Button variant="outline" onClick={() => setCurrentStep(4)}>
                 ← Back
               </Button>
               <Button variant="outline" onClick={() => setCurrentStep(1)}>
