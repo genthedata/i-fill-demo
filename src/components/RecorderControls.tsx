@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Mic, Square } from "lucide-react";
 import { getHttpBase } from "@/config/api";
+import AudioVisualization from "./AudioVisualization";
 
 interface Props {
   sessionId: string | null;
@@ -110,13 +111,16 @@ export default function RecorderControls({ sessionId, onFieldUpdate, onTranscrip
   const disabled = !sessionId;
 
   return (
-    <div className="flex items-center gap-3">
-      <Button onClick={startRecording} disabled={disabled || recording} aria-label="Start recording (custom)">
-        <Mic className="mr-2" /> Start Recording
-      </Button>
-      <Button variant="destructive" onClick={stopRecording} disabled={!recording} aria-label="Stop recording (custom)">
-        <Square className="mr-2" /> Stop Recording
-      </Button>
-    </div>
+    <>
+      <div className="flex items-center gap-3">
+        <Button onClick={startRecording} disabled={disabled || recording} aria-label="Start recording (custom)">
+          <Mic className="mr-2" /> Start Recording
+        </Button>
+        <Button variant="destructive" onClick={stopRecording} disabled={!recording} aria-label="Stop recording (custom)">
+          <Square className="mr-2" /> Stop Recording
+        </Button>
+      </div>
+      <AudioVisualization isActive={recording} />
+    </>
   );
 }
