@@ -3,7 +3,7 @@ import SEO from "@/components/SEO";
 export default function SettingsInfo() {
   return (
     <>
-      <SEO title="Settings – I-Fill-Forms" description="Configure backend URL for I-Fill-Forms" />
+      <SEO title="Settings – Noted, Doctor" description="Configure backend URL for Noted, Doctor" />
       <main className="container py-10">
         <h1 className="text-2xl font-semibold">Backend Connection</h1>
         <p className="mt-2 text-sm text-muted-foreground">

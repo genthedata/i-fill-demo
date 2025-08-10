@@ -27,10 +27,10 @@ const Login = () => {
 
   return (
     <>
-      <SEO title="Login – I-Fill-Forms" description="Demo login for doctors to start automated speech-to-form records." />
+      <SEO title="Login – Noted, Doctor" description="Demo login for doctors to start automated speech-to-form records." />
       <main className="min-h-screen grid place-items-center bg-background">
         <section className="w-full max-w-md rounded-lg border bg-card p-6 shadow-sm">
-          <h1 className="mb-2 text-center text-2xl font-semibold">I-Fill-Forms</h1>
+          <h1 className="mb-2 text-center text-2xl font-semibold">Noted, Doctor</h1>
           <p className="mb-6 text-center text-sm text-muted-foreground">
             Use demo credentials: {DEMO_USER.email} / {DEMO_USER.password}
           </p>

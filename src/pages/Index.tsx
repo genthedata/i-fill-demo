@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download } from "lucide-react";
-import { TowerLoader } from "@/components/TowerLoader";
+import { PencilLoader } from "@/components/PencilLoader";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
 import { getHttpBase, getWsBase } from "@/config/api";
@@ -377,7 +377,7 @@ const Index = () => {
 
   return (
     <>
-      <SEO title="I-Fill-Forms – Automated Speech-to-Form EMR" description="Real-time speech-to-form medical records. Start recording, watch fields fill themselves, export to CSV." />
+      <SEO title="Noted, Doctor – Automated Speech-to-Form EMR" description="Real-time speech-to-form medical records. Start recording, watch fields fill themselves, export to CSV." />
       <Navbar doctorName={doctorName} wsStatus={wsStatus} />
       <main className="container py-8">
         <header className="mb-6">
@@ -605,10 +605,10 @@ const Index = () => {
               </Button>
             </div>
 
-            {/* Tower Loader Overlay */}
+            {/* Pencil Loader Overlay */}
             {showTransitionLoader && (
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
-                <TowerLoader />
+                <PencilLoader />
               </div>
             )}
           </div>

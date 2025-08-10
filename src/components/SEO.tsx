@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 
 export default function SEO({
-  title = "I-Fill-Forms – Automated Speech-to-Form EMR",
+  title = "Noted, Doctor – Automated Speech-to-Form EMR",
   description = "Clean, automated medical record creation from live conversation. No typing—just talk.",
 }: {
   title?: string;

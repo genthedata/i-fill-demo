@@ -112,15 +112,22 @@ export default function RecorderControls({ sessionId, onFieldUpdate, onTranscrip
 
   return (
     <>
+      <AudioVisualization isActive={recording} />
       <div className="flex items-center gap-3">
-        <Button onClick={startRecording} disabled={disabled || recording} aria-label="Start recording (custom)">
+        <Button 
+          onClick={startRecording} 
+          disabled={disabled || recording} 
+          aria-label="Start recording (custom)"
+          className={recording ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""}
+        >
           <Mic className="mr-2" /> Start Recording
         </Button>
-        <Button variant="destructive" onClick={stopRecording} disabled={!recording} aria-label="Stop recording (custom)">
-          <Square className="mr-2" /> Stop Recording
-        </Button>
+        {recording && (
+          <Button variant="destructive" onClick={stopRecording} disabled={!recording} aria-label="Stop recording (custom)">
+            <Square className="mr-2" /> Stop Recording
+          </Button>
+        )}
       </div>
-      <AudioVisualization isActive={recording} />
     </>
   );
 }
