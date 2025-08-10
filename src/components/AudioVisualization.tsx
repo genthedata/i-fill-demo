@@ -105,21 +105,18 @@ export default function AudioVisualization({ isActive }: AudioVisualizationProps
   if (!isActive) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+    <div className="flex flex-col items-center justify-center py-4 animate-fade-in">
       <div className="relative">
         <canvas
           ref={canvasRef}
-          width={300}
-          height={300}
-          className="drop-shadow-2xl"
+          width={200}
+          height={200}
+          className="drop-shadow-lg"
         />
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
-            <div className="text-lg font-medium text-primary animate-pulse">
+            <div className="text-sm font-medium text-primary animate-pulse">
               Listening...
-            </div>
-            <div className="text-sm text-muted-foreground mt-2">
-              Recording audio
             </div>
           </div>
         </div>
