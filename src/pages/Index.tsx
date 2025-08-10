@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download } from "lucide-react";
+import { TowerLoader } from "@/components/TowerLoader";
 import { useMedicalSession } from "@/hooks/useMedicalSession";
 import { toast } from "sonner";
 import { getHttpBase, getWsBase } from "@/config/api";
@@ -38,6 +39,7 @@ type SessionDetails = {
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [showTransitionLoader, setShowTransitionLoader] = useState(false);
   const [patientName, setPatientName] = useState("");
   const [doctorName] = useState<string | undefined>("Dr. John Smith");
   const [httpStatus, setHttpStatus] = useState<'idle' | 'ok' | 'fail'>("idle");
@@ -592,15 +594,28 @@ const Index = () => {
               <Button variant="outline" onClick={() => setCurrentStep(2)}>
                 ← Back
               </Button>
-              <Button onClick={() => setCurrentStep(4)} className="min-w-24">
+              <Button onClick={() => {
+                setShowTransitionLoader(true);
+                setTimeout(() => {
+                  setShowTransitionLoader(false);
+                  setCurrentStep(4);
+                }, 3000);
+              }} className="min-w-24">
                 Next →
               </Button>
             </div>
           </div>
         )}
 
+        {/* Transition Loader */}
+        {showTransitionLoader && (
+          <div className="animate-fade-in flex items-center justify-center min-h-[400px]">
+            <TowerLoader />
+          </div>
+        )}
+
         {/* Step 4: Live Transcription & Auto-filled Records */}
-        {currentStep === 4 && (
+        {currentStep === 4 && !showTransitionLoader && (
           <div className="animate-fade-in space-y-6">
             <div className="text-center mb-8">
               <h2 className="text-xl font-semibold mb-2">Step 4: Live Transcription & Auto-filled Records</h2>
