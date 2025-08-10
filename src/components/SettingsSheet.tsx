@@ -20,7 +20,8 @@ export default function SettingsSheet({ wsStatus = "disconnected" }: Props) {
     setPinging(true);
     try {
       const base = getHttpBase();
-      const res = await fetch(`${base}/api/export/__ping__/csv`, {
+      // Use schemas list endpoint for ping instead of non-existent session
+      const res = await fetch(`${base}/api/schemas/list`, {
         headers: { "ngrok-skip-browser-warning": "1" },
       });
       if (res.ok || (res.status >= 200 && res.status < 500)) {
