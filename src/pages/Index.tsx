@@ -727,7 +727,7 @@ const Index = () => {
             <div className="flex justify-center">
               {exportCsvUrl && (
                 <Button id="downloadBtn" variant="default" asChild aria-label="Download CSV" className="min-w-32">
-                  <a href={exportCsvUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={exportCsvUrl} download="medical-record.csv">
                     <Download className="mr-2" /> Export CSV
                   </a>
                 </Button>
