@@ -346,10 +346,38 @@ const Index = () => {
     }
   };
 
-  const exportCsvUrl = useMemo(() => {
-    const sid = selectedSessionId || sessionId || (typeof window !== 'undefined' ? localStorage.getItem('SESSION_ID') : null);
-    return sid ? `${getHttpBase()}/api/export/${encodeURIComponent(sid)}/csv` : null;
-  }, [selectedSessionId, sessionId, apiBase]);
+  const exportCsvLocal = () => {
+    if (!sessionDetails) {
+      toast.error('No session data to export');
+      return;
+    }
+
+    const csvData = [
+      ['Field', 'Value'],
+      ['Session ID', sessionDetails.id],
+      ['Session Name', sessionDetails.name || ''],
+      ['Symptoms', displayFields.symptoms],
+      ['Medications', displayFields.medications],
+      ['Doctor Conclusion & Instructions', displayFields.conclusion],
+      ['Created At', sessionDetails.created_at || '']
+    ];
+
+    const csvContent = csvData.map(row => 
+      row.map(field => `"${(field || '').toString().replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `medical-record-${sessionDetails.name || sessionDetails.id}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('CSV exported successfully');
+  };
 
   const displayFields = useMemo(() => {
     const f = (sessionDetails?.fields || {}) as any;
@@ -725,11 +753,9 @@ const Index = () => {
             </section>
 
             <div className="flex justify-center">
-              {exportCsvUrl && (
-                <Button id="downloadBtn" variant="default" asChild aria-label="Download CSV" className="min-w-32">
-                  <a href={exportCsvUrl} download="medical-record.csv">
-                    <Download className="mr-2" /> Export CSV
-                  </a>
+              {sessionDetails && (
+                <Button id="downloadBtn" variant="default" onClick={exportCsvLocal} aria-label="Download CSV" className="min-w-32">
+                  <Download className="mr-2" /> Export CSV
                 </Button>
               )}
             </div>
