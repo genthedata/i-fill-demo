@@ -568,7 +568,7 @@ const Index = () => {
 
         {/* Step 3: Recording */}
         {currentStep === 3 && (
-          <div className="animate-fade-in space-y-6">
+          <div className="animate-fade-in space-y-6 relative">
             <div className="text-center mb-8">
               <h2 className="text-xl font-semibold mb-2">Step 3: Voice Recording</h2>
               <p className="text-muted-foreground">Start recording to capture voice and transcription</p>
@@ -604,13 +604,13 @@ const Index = () => {
                 Next →
               </Button>
             </div>
-          </div>
-        )}
 
-        {/* Transition Loader */}
-        {showTransitionLoader && (
-          <div className="animate-fade-in flex items-center justify-center min-h-[400px]">
-            <TowerLoader />
+            {/* Tower Loader Overlay */}
+            {showTransitionLoader && (
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
+                <TowerLoader />
+              </div>
+            )}
           </div>
         )}
 
